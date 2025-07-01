@@ -30,7 +30,10 @@ class FullPackageController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'includes' => 'required|array',
+            'visa' => 'required|array',
+            'air_ticket' => 'required|array',
+            'transport' => 'required|array',
+            'program' => 'required|array',
             'total_price' => 'required|numeric',
         ]);
         $validated['user_id'] = $request->user()->id;

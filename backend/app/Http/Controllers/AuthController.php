@@ -21,7 +21,12 @@ class AuthController extends Controller
             'password' => bcrypt($fields['password']),
         ]);
 
-        return response(['user' => $user], 201);
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response([
+            'user' => $user,
+            'token' => $token
+        ], 201);
     }
 
     public function login(Request $request) {
@@ -31,11 +36,23 @@ class AuthController extends Controller
             return response(['message' => 'Invalid credentials'], 401);
         }
 
-        return response(['message' => 'Login successful'], 200);
+        $user = Auth::user();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => $user->is_admin,
+            ],
+            'token' => $token,
+            'message' => 'Login successful'
+        ], 200);
     }
 
     public function logout(Request $request) {
-        Auth::guard('web')->logout();
+        $request->user()->currentAccessToken()->delete();
         return response(['message' => 'Logged out']);
     }
 }

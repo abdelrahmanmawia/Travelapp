@@ -1,0 +1,152 @@
+import React, { useEffect, useState } from 'react';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import api from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
+import Loader from '@/components/Loader';
+
+interface CarRental {
+  id: number;
+  user: { name: string; email: string };
+  car_type: string;
+  pickup_location: string;
+  dropoff_location: string;
+  pickup_date: string;
+  dropoff_date: string;
+  status: string;
+  created_at: string;
+}
+
+const CarRentalAdminPage: React.FC = () => {
+  const [rentals, setRentals] = useState<CarRental[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchRentals();
+  }, [currentPage]);
+
+  const fetchRentals = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/admin/car-rentals?page=${currentPage}`);
+      setRentals(res.data.data || res.data);
+      setTotalPages(res.data.last_page || 1);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to load car rentals', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (id: number, status: string) => {
+    try {
+      await api.patch(`/admin/car-rentals/${id}/status`, { status });
+      toast({ title: 'Success', description: 'Status updated' });
+      fetchRentals();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to update status', variant: 'destructive' });
+    }
+  };
+
+  const deleteRental = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this rental?')) return;
+    try {
+      await api.delete(`/admin/car-rentals/${id}`);
+      toast({ title: 'Deleted', description: 'Car rental deleted' });
+      fetchRentals();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete', variant: 'destructive' });
+    }
+  };
+
+  const filteredRentals = rentals.filter(rental =>
+    rental.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    rental.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    rental.car_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    rental.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    rental.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8 flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">Car Rental Requests</h1>
+            <Input
+              placeholder="Search by user, car, or location..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-64"
+            />
+          </div>
+          {loading ? (
+            <Loader />
+          ) : (
+            <div className="space-y-4">
+              {filteredRentals.length === 0 && <div className="text-center py-8 text-gray-500">No car rental requests found.</div>}
+              {filteredRentals.map((rental) => (
+                <div key={rental.id} className="flex items-center justify-between p-4 border rounded-lg bg-white">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <h3 className="font-medium">{rental.user?.name || 'Unknown User'}</h3>
+                        <p className="text-sm text-gray-500">{rental.user?.email}</p>
+                        <p className="text-xs text-gray-400">{rental.car_type} | {rental.pickup_location} → {rental.dropoff_location}</p>
+                        <p className="text-xs text-gray-400">Pickup: {rental.pickup_date} | Dropoff: {rental.dropoff_date}</p>
+                        <p className="text-xs text-gray-400">Requested: {new Date(rental.created_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 items-end">
+                    <Badge variant={rental.status === 'pending' ? 'secondary' : 'default'}>{rental.status}</Badge>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(rental.id, 'approved')}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(rental.id, 'rejected')}>Reject</Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteRental(rental.id)}>Delete</Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="flex items-center px-3 text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default CarRentalAdminPage; 

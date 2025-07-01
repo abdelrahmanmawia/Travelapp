@@ -11,12 +11,18 @@ class FullPackage extends Model
 
     protected $fillable = [
         'user_id',
-        'includes',
+        'visa',
+        'air_ticket',
+        'transport',
+        'program',
         'total_price',
     ];
 
     protected $casts = [
-        'includes' => 'array',
+        'visa' => 'array',
+        'air_ticket' => 'array',
+        'transport' => 'array',
+        'program' => 'array',
     ];
 
     public function user()
