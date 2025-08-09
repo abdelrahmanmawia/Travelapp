@@ -14,8 +14,12 @@ return new class extends Migration
         Schema::create('full_packages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->json('includes'); // visa, ticket, accommodation, transport
-            $table->decimal('total_price', 8, 2);
+            $table->boolean('visa'); // visa, ticket, accommodation, transport
+            $table->boolean('air_ticket');
+            $table->boolean('transport');
+            $table->boolean('program');
+            $table->boolean('airport_pickup');
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

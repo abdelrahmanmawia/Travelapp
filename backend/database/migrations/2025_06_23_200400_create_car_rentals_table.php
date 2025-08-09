@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('car_rentals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('car_name');
-            $table->decimal('price', 8, 2);
+            $table->foreignId('car_id')->constrained('cars')->onDelete('cascade');
             $table->integer('license_age');
             $table->string('license_photo');
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

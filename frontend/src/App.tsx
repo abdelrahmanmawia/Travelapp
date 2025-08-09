@@ -19,6 +19,12 @@ import VisaServiceAdminPage from '@/pages/admin/VisaServiceAdminPage';
 import CarRentalAdminPage from '@/pages/admin/CarRentalAdminPage';
 import FullPackageAdminPage from '@/pages/admin/FullPackageAdminPage';
 import LiveInMoroccoAdminPage from '@/pages/admin/LiveInMoroccoAdminPage';
+import CarListPage from '@/pages/services/CarListPage';
+import AppartementListPage from '@/pages/services/AppartementListPage';
+import CarAdminPage from '@/pages/admin/CarAdminPage';
+import AppartementAdminPage from '@/pages/admin/AppartementAdminPage';
+import PaymentsAdminPage from '@/pages/admin/PaymentsAdminPage';
+import AdminLayout from '@/components/AdminLayout';
 
 const queryClient = new QueryClient();
 
@@ -37,36 +43,71 @@ const App = () => (
             <Route path="/services/car-rental" element={<CarRentalPage />} />
             <Route path="/services/live-in-morocco" element={<LiveInMoroccoPage />} />
             <Route path="/services/full-package" element={<FullPackagePage />} />
+            <Route path="/services/cars" element={<CarListPage />} />
+            <Route path="/services/appartements" element={<AppartementListPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requireAdmin={true}>
-                <AdminDashboard />
+                <AdminLayout>
+                  <AdminDashboard />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/users" element={
               <ProtectedRoute requireAdmin={true}>
-                <UsersPage />
+                <AdminLayout>
+                  <UsersPage />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/visa-services" element={
               <ProtectedRoute requireAdmin={true}>
-                <VisaServiceAdminPage />
+                <AdminLayout>
+                  <VisaServiceAdminPage />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/car-rentals" element={
               <ProtectedRoute requireAdmin={true}>
-                <CarRentalAdminPage />
+                <AdminLayout>
+                  <CarRentalAdminPage />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/full-packages" element={
               <ProtectedRoute requireAdmin={true}>
-                <FullPackageAdminPage />
+                <AdminLayout>
+                  <FullPackageAdminPage />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/live-services" element={
               <ProtectedRoute requireAdmin={true}>
-                <LiveInMoroccoAdminPage />
+                <AdminLayout>
+                  <LiveInMoroccoAdminPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/cars" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout>
+                  <CarAdminPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/appartements" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout>
+                  <AppartementAdminPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/payments" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout>
+                  <PaymentsAdminPage />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             

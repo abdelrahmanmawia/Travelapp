@@ -17,6 +17,11 @@ class Booking extends Model
         'paid',
     ];
 
+    protected $casts = [
+        'status' => 'string',
+        'paid' => 'boolean',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -26,7 +31,6 @@ class Booking extends Model
     {
         return $this->morphTo();
     }
-
 
     public function payment() {
         return $this->hasOne(Payment::class);

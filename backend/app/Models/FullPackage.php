@@ -15,14 +15,16 @@ class FullPackage extends Model
         'air_ticket',
         'transport',
         'program',
-        'total_price',
+        'airport_pickup',
+        'status',
     ];
 
     protected $casts = [
-        'visa' => 'array',
-        'air_ticket' => 'array',
-        'transport' => 'array',
-        'program' => 'array',
+        'visa' => 'boolean',
+        'air_ticket' => 'boolean',
+        'transport' => 'boolean',
+        'program' => 'boolean',
+        'airport_pickup' => 'boolean',
     ];
 
     public function user()
@@ -32,4 +34,5 @@ class FullPackage extends Model
     public function booking() {
         return $this->morphOne(Booking::class, 'serviceable');
     }
+
 }

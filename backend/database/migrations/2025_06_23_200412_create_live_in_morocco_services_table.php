@@ -14,11 +14,8 @@ return new class extends Migration
         Schema::create('live_in_morocco_services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->boolean('housing');
-            $table->boolean('sim_card');
-            $table->boolean('admin_support');
-            $table->decimal('price', 8, 2);
-            $table->json('media')->nullable(); // photos/videos
+            $table->foreignId('appartement_id')->constrained('appartements')->onDelete('cascade');
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

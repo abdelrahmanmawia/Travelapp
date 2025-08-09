@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('country_of_birth');
             $table->date('date_of_birth');
             $table->string('residence_country');
-            $table->string('validity');
+            $table->integer('validity')->default(30);
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

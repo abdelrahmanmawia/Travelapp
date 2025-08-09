@@ -278,6 +278,13 @@ const Index = () => {
                 <Card
                   key={index}
                   className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  onClick={() => {
+                    if (service.title === "Visa Services") navigate('/services/visa');
+                    else if (service.title === "Car Rental") navigate('/services/car-rental');
+                    else if (service.title === "Live in Morocco") navigate('/services/live-in-morocco');
+                    else if (service.title === "Full Package") navigate('/services/full-package');
+                  }}
+                  style={{ cursor: 'pointer' }}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-5 group-hover:opacity-10 transition-opacity`}

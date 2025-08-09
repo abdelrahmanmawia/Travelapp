@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\VisaService;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 
 class VisaServiceController extends Controller
@@ -33,11 +34,42 @@ class VisaServiceController extends Controller
             'country_of_birth' => 'required|string',
             'date_of_birth' => 'required|date',
             'residence_country' => 'required|string',
-            'validity' => 'required|string',
+            'validity' => 'required|integer',
         ]);
-        $validated['user_id'] = $request->user()->id;
-        $service = VisaService::create($validated);
-        return response()->json($service, 201);
+
+        // Check if user already has an active visa service
+        $existingService = VisaService::where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->first();
+
+        if ($existingService) {
+            return response()->json(['message' => 'You already have an active visa service'], 400);
+        }
+
+        // Create the visa service
+        $service = VisaService::create([
+            'user_id' => auth()->id(),
+            'country_of_birth' => $validated['country_of_birth'],
+            'date_of_birth' => $validated['date_of_birth'],
+            'residence_country' => $validated['residence_country'],
+            'validity' => $validated['validity'],
+            'status' => 'pending',
+        ]);
+
+        // Create the booking for this service
+        $booking = Booking::create([
+            'user_id' => auth()->id(),
+            'serviceable_id' => $service->id,
+            'serviceable_type' => VisaService::class,
+            'status' => 'pending',
+            'paid' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Visa service booked successfully',
+            'service' => $service,
+            'booking' => $booking
+        ], 201);
     }
 
     /**
@@ -70,5 +102,32 @@ class VisaServiceController extends Controller
     public function destroy(VisaService $visaService)
     {
         //
+    }
+
+    // Cancel visa service
+    public function cancel(Request $request, $id)
+    {
+        $service = VisaService::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->first();
+
+        if (!$service) {
+            return response()->json(['message' => 'No active visa service found'], 404);
+        }
+
+        // Update service status
+        $service->update(['status' => 'cancelled']);
+
+        // Update booking status
+        $booking = $service->booking;
+        if ($booking) {
+            $booking->update(['status' => 'rejected']);
+        }
+
+        return response()->json([
+            'message' => 'Visa service cancelled successfully',
+            'service' => $service
+        ]);
     }
 }

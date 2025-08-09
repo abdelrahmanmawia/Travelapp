@@ -11,20 +11,20 @@ class LiveInMoroccoService extends Model
 
     protected $fillable = [
         'user_id',
-        'housing',
-        'sim_card',
-        'admin_support',
-        'price',
-        'media',
+        'appartement_id',
+        'status',
     ];
 
     protected $casts = [
-        'media' => 'array',
+        'status' => 'string',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function appartement() {
+        return $this->belongsTo(Appartement::class);
     }
     public function booking() {
         return $this->morphOne(Booking::class, 'serviceable');

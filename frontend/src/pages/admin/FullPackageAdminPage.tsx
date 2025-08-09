@@ -66,12 +66,12 @@ const FullPackageAdminPage: React.FC = () => {
   };
 
   const filteredPackages = packages.filter(pkg =>
-    pkg.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.visa?.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.air_ticket?.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.transport?.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.program?.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
+    (pkg.user?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (pkg.user?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (Array.isArray(pkg.visa) ? pkg.visa.join(', ').toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
+    (Array.isArray(pkg.air_ticket) ? pkg.air_ticket.join(', ').toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
+    (Array.isArray(pkg.transport) ? pkg.transport.join(', ').toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
+    (Array.isArray(pkg.program) ? pkg.program.join(', ').toLowerCase() : '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -100,10 +100,10 @@ const FullPackageAdminPage: React.FC = () => {
                       <div>
                         <h3 className="font-medium">{pkg.user?.name || 'Unknown User'}</h3>
                         <p className="text-sm text-gray-500">{pkg.user?.email}</p>
-                        <p className="text-xs text-gray-400">Visa: {pkg.visa?.join(', ')}</p>
-                        <p className="text-xs text-gray-400">Air Ticket: {pkg.air_ticket?.join(', ')}</p>
-                        <p className="text-xs text-gray-400">Transport: {pkg.transport?.join(', ')}</p>
-                        <p className="text-xs text-gray-400">Program: {pkg.program?.join(', ')}</p>
+                        <p className="text-xs text-gray-400">Visa: {Array.isArray(pkg.visa) ? pkg.visa.join(', ') : ''}</p>
+                        <p className="text-xs text-gray-400">Air Ticket: {Array.isArray(pkg.air_ticket) ? pkg.air_ticket.join(', ') : ''}</p>
+                        <p className="text-xs text-gray-400">Transport: {Array.isArray(pkg.transport) ? pkg.transport.join(', ') : ''}</p>
+                        <p className="text-xs text-gray-400">Program: {Array.isArray(pkg.program) ? pkg.program.join(', ') : ''}</p>
                         <p className="text-xs text-gray-400">Total Price: {pkg.total_price}</p>
                         <p className="text-xs text-gray-400">Requested: {new Date(pkg.created_at).toLocaleString()}</p>
                       </div>
@@ -153,4 +153,4 @@ const FullPackageAdminPage: React.FC = () => {
   );
 };
 
-export default FullPackageAdminPage; 
+export default FullPackageAdminPage;

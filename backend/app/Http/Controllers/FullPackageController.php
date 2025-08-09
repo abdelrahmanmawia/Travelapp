@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FullPackage;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 
 class FullPackageController extends Controller
@@ -30,15 +31,47 @@ class FullPackageController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'visa' => 'required|array',
-            'air_ticket' => 'required|array',
-            'transport' => 'required|array',
-            'program' => 'required|array',
-            'total_price' => 'required|numeric',
+            'visa' => 'required|boolean',
+            'air_ticket' => 'required|boolean',
+            'transport' => 'required|boolean',
+            'program' => 'required|boolean',
+            'airport_pickup' => 'required|boolean',
         ]);
-        $validated['user_id'] = $request->user()->id;
-        $package = FullPackage::create($validated);
-        return response()->json($package, 201);
+
+        // Check if user already has an active full package
+        $existingPackage = FullPackage::where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->first();
+
+        if ($existingPackage) {
+            return response()->json(['message' => 'You already have an active full package'], 400);
+        }
+
+        // Create the full package service
+        $package = FullPackage::create([
+            'user_id' => auth()->id(),
+            'visa' => $validated['visa'],
+            'air_ticket' => $validated['air_ticket'],
+            'transport' => $validated['transport'],
+            'program' => $validated['program'],
+            'airport_pickup' => $validated['airport_pickup'],
+            'status' => 'pending',
+        ]);
+
+        // Create the booking for this service
+        $booking = Booking::create([
+            'user_id' => auth()->id(),
+            'serviceable_id' => $package->id,
+            'serviceable_type' => FullPackage::class,
+            'status' => 'pending',
+            'paid' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Full package service booked successfully',
+            'package' => $package,
+            'booking' => $booking
+        ], 201);
     }
 
     /**
@@ -71,5 +104,32 @@ class FullPackageController extends Controller
     public function destroy(FullPackage $fullPackage)
     {
         //
+    }
+
+    // Cancel full package service
+    public function cancel(Request $request, $id)
+    {
+        $package = FullPackage::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->first();
+
+        if (!$package) {
+            return response()->json(['message' => 'No active full package found'], 404);
+        }
+
+        // Update package status
+        $package->update(['status' => 'cancelled']);
+
+        // Update booking status
+        $booking = $package->booking;
+        if ($booking) {
+            $booking->update(['status' => 'rejected']);
+        }
+
+        return response()->json([
+            'message' => 'Full package service cancelled successfully',
+            'package' => $package
+        ]);
     }
 }
