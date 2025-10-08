@@ -10,9 +10,14 @@ return new class extends Migration
     {
         Schema::create('cars', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->string('brand');
-            $table->decimal('price', 8, 2);
+            $table->string('model');
+            $table->integer('year');
+            $table->decimal('price_per_day', 8, 2);
+            $table->string('location');
+            $table->integer('seats');
+            $table->enum('transmission', ['automatic', 'manual']);
+            $table->enum('fuel_type', ['gasoline', 'diesel', 'electric', 'hybrid']);
             $table->boolean('available')->default(true);
             $table->json('images')->nullable();
             $table->timestamps();

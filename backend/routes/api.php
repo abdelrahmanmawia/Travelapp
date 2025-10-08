@@ -102,11 +102,13 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/payments', [AdminController::class, 'payments']);
 
     // Cars (admin)
+    Route::get('/admin/cars', [CarController::class, 'index']);
     Route::post('/admin/cars', [CarController::class, 'store']);
     Route::put('/admin/cars/{id}', [CarController::class, 'update']);
     Route::delete('/admin/cars/{id}', [CarController::class, 'destroy']);
     Route::post('/admin/cars/upload-image', [CarController::class, 'uploadImage']);
     // Appartements (admin)
+    Route::get('/admin/appartements', [AppartementController::class, 'index']);
     Route::post('/admin/appartements', [AppartementController::class, 'store']);
     Route::put('/admin/appartements/{id}', [AppartementController::class, 'update']);
     Route::delete('/admin/appartements/{id}', [AppartementController::class, 'destroy']);

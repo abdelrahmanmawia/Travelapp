@@ -26,11 +26,17 @@ class AppartementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'title' => 'required|string',
+            'description' => 'required|string',
             'address' => 'required|string',
-            'price' => 'required|numeric',
-            'rooms' => 'required|integer',
-            'available' => 'boolean',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'city' => 'required|string',
+            'price_per_night' => 'required|numeric',
+            'bedrooms' => 'required|integer',
+            'bathrooms' => 'required|numeric',
+            'max_guests' => 'required|integer',
+            'amenities' => 'nullable|array',
+            'available' => 'nullable|boolean',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         $imagePaths = [];
@@ -44,10 +50,16 @@ class AppartementController extends Controller
         }
 
         $appartementData = [
+            'title' => $validated['title'],
+            'description' => $validated['description'],
             'address' => $validated['address'],
-            'price' => $validated['price'],
-            'rooms' => $validated['rooms'],
-            'available' => $validated['available'] ?? true,
+            'city' => $validated['city'],
+            'price_per_night' => $validated['price_per_night'],
+            'bedrooms' => $validated['bedrooms'],
+            'bathrooms' => $validated['bathrooms'],
+            'max_guests' => $validated['max_guests'],
+            'amenities' => $validated['amenities'] ?? [],
+            'available' => $request->has('available') ? (bool) $request->input('available') : true,
             'images' => $imagePaths,
         ];
 
@@ -61,21 +73,33 @@ class AppartementController extends Controller
         $appartement = Appartement::findOrFail($id);
 
         $validated = $request->validate([
+            'title' => 'sometimes|string',
+            'description' => 'sometimes|string',
             'address' => 'sometimes|string',
-            'price' => 'sometimes|numeric',
-            'rooms' => 'sometimes|integer',
-            'available' => 'sometimes|boolean',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'city' => 'sometimes|string',
+            'price_per_night' => 'sometimes|numeric',
+            'bedrooms' => 'sometimes|integer',
+            'bathrooms' => 'sometimes|numeric',
+            'max_guests' => 'sometimes|integer',
+            'amenities' => 'sometimes|array',
+            'available' => 'nullable|boolean',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'remove_images' => 'sometimes|array',
         ]);
 
         $updateData = [];
 
         // Handle basic fields
+        if (isset($validated['title'])) $updateData['title'] = $validated['title'];
+        if (isset($validated['description'])) $updateData['description'] = $validated['description'];
         if (isset($validated['address'])) $updateData['address'] = $validated['address'];
-        if (isset($validated['price'])) $updateData['price'] = $validated['price'];
-        if (isset($validated['rooms'])) $updateData['rooms'] = $validated['rooms'];
-        if (isset($validated['available'])) $updateData['available'] = $validated['available'];
+        if (isset($validated['city'])) $updateData['city'] = $validated['city'];
+        if (isset($validated['price_per_night'])) $updateData['price_per_night'] = $validated['price_per_night'];
+        if (isset($validated['bedrooms'])) $updateData['bedrooms'] = $validated['bedrooms'];
+        if (isset($validated['bathrooms'])) $updateData['bathrooms'] = $validated['bathrooms'];
+        if (isset($validated['max_guests'])) $updateData['max_guests'] = $validated['max_guests'];
+        if (isset($validated['amenities'])) $updateData['amenities'] = $validated['amenities'];
+        if ($request->has('available')) $updateData['available'] = (bool) $request->input('available');
 
         // Handle image removal
         $currentImages = $appartement->images ?? [];

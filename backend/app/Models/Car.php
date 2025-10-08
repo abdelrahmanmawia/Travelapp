@@ -10,9 +10,14 @@ class Car extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
         'brand',
-        'price',
+        'model',
+        'year',
+        'price_per_day',
+        'location',
+        'seats',
+        'transmission',
+        'fuel_type',
         'available',
         'images',
     ];
@@ -20,11 +25,12 @@ class Car extends Model
     protected $casts = [
         'images' => 'array',
         'available' => 'boolean',
+        'year' => 'integer',
+        'seats' => 'integer',
+        'price_per_day' => 'decimal:2',
     ];
 
     public function carRentals() {
         return $this->hasMany(CarRental::class);
     }
-
-    
 }

@@ -132,7 +132,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
       </nav>
 
       {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bottom-0 left-0 right-0">
         <div className="space-y-2">
           <Link
             to="/admin/settings"
@@ -161,3 +161,4 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
 };
 
 export default AdminSidebar;
+

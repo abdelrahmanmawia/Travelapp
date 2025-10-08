@@ -8,65 +8,87 @@ use Illuminate\Support\Facades\Storage;
 
 class CarController extends Controller
 {
-    // List all available cars (for users)
+    // Helper function to format images
+    private function formatCar(Car $car)
+    {
+        $car->images = $car->images 
+            ? array_map(fn($path) => asset(Storage::url($path))
+, $car->images) 
+            : [];
+        return $car;
+    }
+
+    // List available cars
     public function index()
     {
-        $cars = Car::where('available', true)->get();
+        $cars = Car::where('available', true)->get()->map(fn($car) => $this->formatCar($car));
         return response()->json($cars);
     }
 
-    // Show a single car
-    public function show($id)
+    // Show single car
+    public function show(Car $car)
     {
-        $car = Car::findOrFail($id);
-        return response()->json($car);
+        return response()->json($this->formatCar($car));
     }
 
-    // Admin: Create a new car
+    // Store new car
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string',
             'brand' => 'required|string',
-            'price' => 'required|numeric',
+            'model' => 'required|string',
+            'year' => 'required|integer',
+            'price_per_day' => 'required|numeric',
+            'location' => 'required|string',
+            'seats' => 'required|integer',
+            'transmission' => 'required|string',
+            'fuel_type' => 'required|string',
             'available' => 'boolean',
-            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png|max:2048'
         ]);
-        $car = Car::create($validated);
-        return response()->json($car, 201);
+
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imagePaths[] = $image->store('cars', 'public');
+            }
+        }
+
+        $car = Car::create(array_merge($validated, ['images' => $imagePaths]));
+        return response()->json($this->formatCar($car), 201);
     }
 
-    // Admin: Update a car
-    public function update(Request $request, $id)
+    // Update car
+    public function update(Request $request, Car $car)
     {
-        $car = Car::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'sometimes|string',
-            'brand' => 'sometimes|string',
-            'price' => 'sometimes|numeric',
-            'available' => 'sometimes|boolean',
-            'images' => 'nullable|array',
+            'brand' => 'string',
+            'model' => 'string',
+            'year' => 'integer',
+            'price_per_day' => 'numeric',
+            'location' => 'string',
+            'seats' => 'integer',
+            'transmission' => 'string',
+            'fuel_type' => 'string',
+            'available' => 'boolean',
+            'images.*' => 'image|mimes:jpg,jpeg,png|max:2048'
         ]);
-        $car->update($validated);
-        return response()->json($car);
+
+        $imagePaths = $car->images ?? [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $imagePaths[] = $image->store('cars', 'public');
+            }
+        }
+
+        $car->update(array_merge($validated, ['images' => $imagePaths]));
+        return response()->json($this->formatCar($car));
     }
 
-    // Admin: Delete a car
-    public function destroy($id)
+    // Delete car
+    public function destroy(Car $car)
     {
-        $car = Car::findOrFail($id);
         $car->delete();
         return response()->json(['message' => 'Car deleted successfully']);
-    }
-
-    // Admin: Upload car image
-    public function uploadImage(Request $request)
-    {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
-        ]);
-        $path = $request->file('image')->store('uploads/cars', 'public');
-        $url = Storage::url($path);
-        return response()->json(['url' => $url]);
     }
 }

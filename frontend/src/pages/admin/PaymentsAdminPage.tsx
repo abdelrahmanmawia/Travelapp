@@ -1,153 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
-import { CreditCard, Search, Filter, Eye, Download } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, CreditCard, User, Calendar, DollarSign, Clock, CheckCircle, XCircle, Trash2, Filter, TrendingUp, TrendingDown } from 'lucide-react';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
+import Loader from '@/components/Loader';
 
 interface Payment {
   id: number;
-  booking_id: number;
+  user: { name: string; email: string };
   amount: number;
-  method: string;
-  payment_status: 'pending' | 'completed' | 'failed';
-  transaction_id?: string;
+  currency: string;
+  payment_method: string;
+  status: string;
+  payment_type: string;
+  reference_id: string;
+  description: string;
   created_at: string;
-  booking?: {
-    id: number;
-    user: {
-      name: string;
-      email: string;
-    };
-    serviceable_type: string;
-    status: string;
-  };
+  updated_at: string;
 }
 
 const PaymentsAdminPage: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [methodFilter, setMethodFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchPayments();
-  }, []);
-
-  useEffect(() => {
-    filterPayments();
-  }, [payments, searchTerm, statusFilter, methodFilter]);
+  }, [currentPage]);
 
   const fetchPayments = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await api.get('/admin/payments');
-      setPayments(response.data.data || response.data);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to load payments',
-        variant: 'destructive',
-      });
+      const res = await api.get(`/admin/payments?page=${currentPage}`);
+      setPayments(res.data.data || res.data);
+      setTotalPages(res.data.last_page || 1);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to load payments', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const filterPayments = () => {
-    let filtered = payments;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(payment =>
-        payment.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.booking?.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.booking?.user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const updateStatus = async (id: number, status: string) => {
+    try {
+      await api.patch(`/admin/payments/${id}/status`, { status });
+      toast({ title: 'Success', description: 'Payment status updated successfully' });
+      fetchPayments();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to update payment status', variant: 'destructive' });
     }
-
-    // Status filter
-    if (statusFilter && statusFilter !== 'all') {
-      filtered = filtered.filter(payment => payment.payment_status === statusFilter);
-    }
-
-    // Method filter
-    if (methodFilter && methodFilter !== 'all') {
-      filtered = filtered.filter(payment => payment.method === methodFilter);
-    }
-
-    setFilteredPayments(filtered);
   };
 
-  const getStatusColor = (status: string) => {
+  const deletePayment = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this payment record?')) return;
+    try {
+      await api.delete(`/admin/payments/${id}`);
+      toast({ title: 'Success', description: 'Payment record deleted successfully' });
+      fetchPayments();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete payment', variant: 'destructive' });
+    }
+  };
+
+  const filteredPayments = payments.filter(payment =>
+    payment.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.payment_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.reference_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      processing: 'bg-blue-100 text-blue-800 border-blue-200',
+      completed: 'bg-green-100 text-green-800 border-green-200',
+      failed: 'bg-red-100 text-red-800 border-red-200',
+      refunded: 'bg-gray-100 text-gray-800 border-gray-200',
+      cancelled: 'bg-red-100 text-red-800 border-red-200'
+    };
+    return variants[status as keyof typeof variants] || variants.pending;
+  };
+
+  const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-600" />;
       case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'failed':
-        return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'refunded':
+        return <TrendingDown className="w-4 h-4 text-gray-600" />;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return <Clock className="w-4 h-4 text-yellow-600" />;
     }
   };
 
-  const getMethodColor = (method: string) => {
+  const getPaymentMethodIcon = (method: string) => {
     switch (method.toLowerCase()) {
-      case 'visa':
-        return 'bg-blue-100 text-blue-800';
-      case 'mastercard':
-        return 'bg-red-100 text-red-800';
+      case 'credit_card':
+        return <CreditCard className="w-4 h-4 text-blue-600" />;
       case 'paypal':
-        return 'bg-blue-100 text-blue-800';
+        return <span className="text-blue-600 font-bold text-sm">PP</span>;
+      case 'bank_transfer':
+        return <span className="text-green-600 font-bold text-sm">BT</span>;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return <CreditCard className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const getTotalRevenue = () => {
+    return payments
+      .filter(p => p.status === 'completed')
+      .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
-  const exportPayments = () => {
-    const csvContent = [
-      ['ID', 'Booking ID', 'Amount', 'Method', 'Status', 'Transaction ID', 'Date', 'User'],
-      ...filteredPayments.map(payment => [
-        payment.id,
-        payment.booking_id,
-        payment.amount,
-        payment.method,
-        payment.payment_status,
-        payment.transaction_id || '',
-        formatDate(payment.created_at),
-        payment.booking?.user.name || ''
-      ])
-    ].map(row => row.join(',')).join('\n');
+  const getPendingAmount = () => {
+    return payments
+      .filter(p => p.status === 'pending' || p.status === 'processing')
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payments-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const getFailedAmount = () => {
+    return payments
+      .filter(p => p.status === 'failed' || p.status === 'cancelled')
+      .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading payments...</p>
@@ -157,145 +147,94 @@ const PaymentsAdminPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
+        {/* Header Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Payments Management</h1>
-                <p className="text-gray-600 mt-2">Monitor and manage all payment transactions</p>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Payments Management
+              </h1>
+              <p className="text-gray-600 mt-2 text-lg">Monitor and manage all payment transactions</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="Search payments..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-10 w-80 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-              <Button onClick={exportPayments} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+              <Button variant="outline" className="border-gray-200 hover:bg-gray-50">
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
               </Button>
+            </div>
             </div>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search by transaction ID, user..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+                  <p className="text-sm font-medium text-gray-600">Total Transactions</p>
+                  <p className="text-3xl font-bold text-gray-900">{payments.length}</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="failed">Failed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                  <Select value={methodFilter} onValueChange={setMethodFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All methods" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All methods</SelectItem>
-                      <SelectItem value="visa">Visa</SelectItem>
-                      <SelectItem value="mastercard">Mastercard</SelectItem>
-                      <SelectItem value="paypal">PayPal</SelectItem>
-                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-end">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSearchTerm('');
-                      setStatusFilter('all');
-                      setMethodFilter('all');
-                    }}
-                    className="w-full"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Clear Filters
-                  </Button>
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <CreditCard className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <Card>
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                    <p className="text-2xl font-bold">{payments.length}</p>
-                  </div>
-                  <CreditCard className="h-8 w-8 text-blue-600" />
+                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    ${getTotalRevenue().toLocaleString()}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Completed</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {payments.filter(p => p.payment_status === 'completed').length}
-                    </p>
-                  </div>
-                  <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <div className="h-4 w-4 bg-green-600 rounded-full"></div>
+                <div className="p-3 bg-green-100 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {payments.filter(p => p.payment_status === 'pending').length}
+                  <p className="text-3xl font-bold text-yellow-600">
+                    ${getPendingAmount().toLocaleString()}
                     </p>
                   </div>
-                  <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <div className="h-4 w-4 bg-yellow-600 rounded-full"></div>
+                <div className="p-3 bg-yellow-100 rounded-full">
+                  <Clock className="w-6 h-6 text-yellow-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+          <Card className="bg-white border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Failed</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {payments.filter(p => p.payment_status === 'failed').length}
+                  <p className="text-sm font-medium text-gray-600">Failed/Cancelled</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    ${getFailedAmount().toLocaleString()}
                     </p>
                   </div>
-                  <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <div className="h-4 w-4 bg-red-600 rounded-full"></div>
+                <div className="p-3 bg-red-100 rounded-full">
+                  <TrendingDown className="w-6 h-6 text-red-600" />
                   </div>
                 </div>
               </CardContent>
@@ -303,59 +242,235 @@ const PaymentsAdminPage: React.FC = () => {
           </div>
 
           {/* Payments List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Transactions</CardTitle>
-              <CardDescription>
-                Showing {filteredPayments.length} of {payments.length} payments
-              </CardDescription>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader />
+          </div>
+        ) : (
+          <Card className="bg-white border-0 shadow-lg">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="text-xl font-semibold text-gray-900">All Payments ({filteredPayments.length})</CardTitle>
+              <CardDescription>Monitor and manage all payment transactions</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {filteredPayments.length === 0 ? (
-                <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No payments found</p>
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CreditCard className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+                  <p className="text-gray-500">No payments match your search criteria.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {filteredPayments.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-blue-100 rounded-full">
-                          <CreditCard className="h-6 w-6 text-blue-600" />
+                    <Card key={payment.id} className="border border-gray-100 hover:border-blue-200 transition-all hover:shadow-md">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-4">
+                            {/* User and Payment Info */}
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <User className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900 text-lg">{payment.user?.name || 'Unknown User'}</h3>
+                                <p className="text-gray-600">{payment.user?.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <CreditCard className="w-4 h-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {payment.payment_type} - {payment.reference_id}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Payment Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <DollarSign className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-700">Amount:</span>
+                                  <span className="text-sm font-bold text-green-600">
+                                    {payment.currency} {payment.amount.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-700">Payment Method:</span>
+                                  <span className="text-sm text-gray-600 capitalize">
+                                    {payment.payment_method.replace('_', ' ')}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-700">Created:</span>
+                                  <span className="text-sm text-gray-600">
+                                    {new Date(payment.created_at).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold">Payment #{payment.id}</h3>
-                            <Badge className={getStatusColor(payment.payment_status)}>
-                              {payment.payment_status}
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-700">Status:</span>
+                                  <div className="flex items-center gap-2">
+                                    {getStatusIcon(payment.status)}
+                                    <Badge className={`${getStatusBadge(payment.status)} border`}>
+                                      {payment.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600">
-                            Booking #{payment.booking_id} • {payment.booking?.user.name || 'Unknown User'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {payment.booking?.serviceable_type} • {formatDate(payment.created_at)}
-                          </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-700">Updated:</span>
+                                  <span className="text-sm text-gray-600">
+                                    {new Date(payment.updated_at).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
                         </div>
+                                {payment.description && (
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700">Description:</span>
+                                    <span className="text-sm text-gray-600">{payment.description}</span>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-lg">${payment.amount}</p>
-                        <Badge className={getMethodColor(payment.method)}>
-                          {payment.method}
-                        </Badge>
-                        {payment.transaction_id && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            ID: {payment.transaction_id}
-                          </p>
                         )}
                       </div>
                     </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex flex-col gap-2 ml-6">
+                            <div className="flex items-center gap-2">
+                              {getPaymentMethodIcon(payment.payment_method)}
+                              <span className="text-sm text-gray-600 capitalize">
+                                {payment.payment_method.replace('_', ' ')}
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-col gap-2">
+                              {payment.status === 'pending' && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-600 hover:bg-green-700 text-white border-0"
+                                    onClick={() => updateStatus(payment.id, 'completed')}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Mark Complete
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="border-red-200 text-red-600 hover:bg-red-50"
+                                    onClick={() => updateStatus(payment.id, 'failed')}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Mark Failed
+                                  </Button>
+                                </>
+                              )}
+                              {payment.status === 'processing' && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-600 hover:bg-green-700 text-white border-0"
+                                    onClick={() => updateStatus(payment.id, 'completed')}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Complete
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="border-red-200 text-red-600 hover:bg-red-50"
+                                    onClick={() => updateStatus(payment.id, 'failed')}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Fail
+                                  </Button>
+                                </>
+                              )}
+                              {payment.status === 'completed' && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-gray-200 text-gray-600 hover:bg-gray-50"
+                                  onClick={() => updateStatus(payment.id, 'refunded')}
+                                >
+                                  <TrendingDown className="w-4 h-4 mr-2" />
+                                  Refund
+                                </Button>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={() => deletePayment(payment.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
+                </div>
+              )}
+
+              {/* Enhanced Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2 shadow-sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      className="border-gray-200 hover:bg-gray-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1 px-4">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : "border-gray-200 hover:bg-gray-50"}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      className="border-gray-200 hover:bg-gray-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
+        )}
         </div>
       </div>
   );
