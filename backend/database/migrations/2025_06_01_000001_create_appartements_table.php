@@ -11,16 +11,10 @@ return new class extends Migration
         Schema::create('appartements', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('description');
             $table->string('address');
-            $table->string('city');
-            $table->decimal('price_per_night', 8, 2);
-            $table->integer('bedrooms');
-            $table->decimal('bathrooms', 2, 1);
-            $table->integer('max_guests');
-            $table->json('amenities')->nullable();
-            $table->boolean('available')->default(true);
-            $table->json('images')->nullable();
+            $table->integer('rooms');
+            $table->decimal('price', 10, 2);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

@@ -13,22 +13,19 @@ class Car extends Model
         'brand',
         'model',
         'year',
-        'price_per_day',
-        'location',
-        'seats',
-        'transmission',
-        'fuel_type',
-        'available',
-        'images',
+        'price',
+        'description'
     ];
 
     protected $casts = [
-        'images' => 'array',
-        'available' => 'boolean',
         'year' => 'integer',
-        'seats' => 'integer',
-        'price_per_day' => 'decimal:2',
+        'price' => 'decimal:2',
     ];
+
+    public function images()
+    {
+        return $this->morphMany(Image::class, 'imageable')->orderBy('order');
+    }
 
     public function carRentals() {
         return $this->hasMany(CarRental::class);

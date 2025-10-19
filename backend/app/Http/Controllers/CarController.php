@@ -5,90 +5,95 @@ namespace App\Http\Controllers;
 use App\Models\Car;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class CarController extends Controller
 {
-    // Helper function to format images
-    private function formatCar(Car $car)
-    {
-        $car->images = $car->images 
-            ? array_map(fn($path) => asset(Storage::url($path))
-, $car->images) 
-            : [];
-        return $car;
-    }
-
-    // List available cars
     public function index()
     {
-        $cars = Car::where('available', true)->get()->map(fn($car) => $this->formatCar($car));
+        $cars = Car::with('images')->latest()->get();
         return response()->json($cars);
     }
 
-    // Show single car
-    public function show(Car $car)
-    {
-        return response()->json($this->formatCar($car));
-    }
-
-    // Store new car
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'brand' => 'required|string',
-            'model' => 'required|string',
+        $request->validate([
+            'brand' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
             'year' => 'required|integer',
-            'price_per_day' => 'required|numeric',
-            'location' => 'required|string',
-            'seats' => 'required|integer',
-            'transmission' => 'required|string',
-            'fuel_type' => 'required|string',
-            'available' => 'boolean',
-            'images.*' => 'image|mimes:jpg,jpeg,png|max:2048'
+            'price' => 'required|numeric',
+            'description' => 'nullable|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $imagePaths = [];
+        $car = Car::create($request->only(['brand', 'model', 'year', 'price', 'description']));
+
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $imagePaths[] = $image->store('cars', 'public');
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('cars', 'public');
+                $car->images()->create([
+                    'path' => $path,
+                    'order' => $index
+                ]);
             }
         }
 
-        $car = Car::create(array_merge($validated, ['images' => $imagePaths]));
-        return response()->json($this->formatCar($car), 201);
+        return response()->json($car->load('images'), 201);
     }
 
-    // Update car
+    public function show(Car $car)
+    {
+        return response()->json($car->load('images'));
+    }
+
     public function update(Request $request, Car $car)
     {
-        $validated = $request->validate([
-            'brand' => 'string',
-            'model' => 'string',
+        $request->validate([
+            'brand' => 'string|max:255',
+            'model' => 'string|max:255',
             'year' => 'integer',
-            'price_per_day' => 'numeric',
-            'location' => 'string',
-            'seats' => 'integer',
-            'transmission' => 'string',
-            'fuel_type' => 'string',
-            'available' => 'boolean',
-            'images.*' => 'image|mimes:jpg,jpeg,png|max:2048'
+            'price' => 'numeric',
+            'description' => 'nullable|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $imagePaths = $car->images ?? [];
+        $car->update($request->only(['brand', 'model', 'year', 'price', 'description']));
+
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $imagePaths[] = $image->store('cars', 'public');
+            // Delete old images
+            foreach ($car->images as $image) {
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+
+            // Upload new images
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('cars', 'public');
+                $car->images()->create([
+                    'path' => $path,
+                    'order' => $index
+                ]);
             }
         }
 
-        $car->update(array_merge($validated, ['images' => $imagePaths]));
-        return response()->json($this->formatCar($car));
+        return response()->json($car->load('images'));
     }
 
-    // Delete car
     public function destroy(Car $car)
     {
+        foreach ($car->images as $image) {
+            if (Storage::disk('public')->exists($image->path)) {
+                Log::info("File exists at path: {$image->path}");
+                $deleted = Storage::disk('public')->delete($image->path);
+                Log::info("Deleting {$image->path}: " . ($deleted ? 'success' : 'fail'));
+            } else {
+                Log::warning("File not found at path: {$image->path}");
+            }
+            $image->delete();
+        }
+
         $car->delete();
+
         return response()->json(['message' => 'Car deleted successfully']);
     }
 }

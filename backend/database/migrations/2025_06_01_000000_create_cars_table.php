@@ -13,13 +13,8 @@ return new class extends Migration
             $table->string('brand');
             $table->string('model');
             $table->integer('year');
-            $table->decimal('price_per_day', 8, 2);
-            $table->string('location');
-            $table->integer('seats');
-            $table->enum('transmission', ['automatic', 'manual']);
-            $table->enum('fuel_type', ['gasoline', 'diesel', 'electric', 'hybrid']);
-            $table->boolean('available')->default(true);
-            $table->json('images')->nullable();
+            $table->decimal('price', 10, 2);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
