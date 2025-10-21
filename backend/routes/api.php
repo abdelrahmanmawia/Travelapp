@@ -104,15 +104,14 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Cars (admin)
     Route::get('/admin/cars', [CarController::class, 'index']);
     Route::post('/admin/cars', [CarController::class, 'store']);
-    Route::put('/admin/cars/{car}', [CarController::class, 'update']);
+    Route::post('/admin/cars/{car}', [CarController::class, 'update']);
     Route::delete('/admin/cars/{car}', [CarController::class, 'destroy']);
 
     // Appartements (admin)
     Route::get('/admin/appartements', [AppartementController::class, 'index']);
     Route::post('/admin/appartements', [AppartementController::class, 'store']);
-    Route::put('/admin/appartements/{id}', [AppartementController::class, 'update']);
-    Route::delete('/admin/appartements/{id}', [AppartementController::class, 'destroy']);
-    Route::post('/admin/appartements/upload-image', [AppartementController::class, 'uploadImage']);
+    Route::post('/admin/appartements/{appartement}', [AppartementController::class, 'update']);
+    Route::delete('/admin/appartements/{appartement}', [AppartementController::class, 'destroy']);
 });
 
 

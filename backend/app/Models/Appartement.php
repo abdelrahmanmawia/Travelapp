@@ -14,8 +14,7 @@ class Appartement extends Model
         'description',
         'address',
         'rooms',
-        'price',
-        'description'
+        'price'
     ];
 
     protected $casts = [

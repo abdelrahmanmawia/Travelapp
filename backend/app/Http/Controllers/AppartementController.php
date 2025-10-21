@@ -80,6 +80,7 @@ class AppartementController extends Controller
     {
         foreach ($appartement->images as $image) {
             Storage::disk('public')->delete($image->path);
+
             $image->delete();
         }
 

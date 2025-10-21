@@ -133,7 +133,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
 
       {/* Footer */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bottom-0 left-0 right-0">
-        <div className="space-y-2">
+        <div className="space-y-2 ">
           <Link
             to="/admin/settings"
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
