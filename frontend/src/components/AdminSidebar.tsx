@@ -87,11 +87,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
   };
 
   return (
-    <div className={`bg-white border-r border-gray-200 h-screen transition-all duration-300 ${
+    <div className={`bg-white border-r border-gray-200 h-screen transition-all duration-300 flex flex-col ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className={`flex items-center p-4 border-b border-gray-200 ${
+        isCollapsed ? 'justify-center' : 'justify-between'
+      }`}>
         {!isCollapsed && (
           <h2 className="text-lg font-semibold text-gray-900">Admin Panel</h2>
         )}
@@ -110,16 +112,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
       </div>
 
       {/* Navigation Menu */}
-      <nav className="p-4 space-y-2">
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item, index) => (
           <Link
             key={index}
             to={item.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+            className={`flex items-center rounded-lg transition-colors ${
+              isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2'
+            } ${
               isActive(item.href)
-                ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                ? 'bg-blue-50 text-blue-700'
                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
             }`}
+            title={isCollapsed ? item.title : ''}
           >
             <div className={item.color}>
               {item.icon}
@@ -132,33 +137,35 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, onToggle }) =>
       </nav>
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bottom-0 left-0 right-0">
-        <div className="space-y-2 ">
-          <Link
-            to="/admin/settings"
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              isActive('/admin/settings')
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
-            <Settings className="h-5 w-5" />
-            {!isCollapsed && <span className="font-medium">Settings</span>}
-          </Link>
-          
-          <Button
-            variant="ghost"
-            onClick={logout}
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <LogOut className="h-5 w-5" />
-            {!isCollapsed && <span className="font-medium ml-3">Logout</span>}
-          </Button>
-        </div>
+      <div className="p-2 border-t border-gray-200 space-y-1">
+        <Link
+          to="/admin/settings"
+          className={`flex items-center rounded-lg transition-colors ${
+            isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2'
+          } ${
+            isActive('/admin/settings')
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+          title={isCollapsed ? 'Settings' : ''}
+        >
+          <Settings className="h-5 w-5 text-gray-700" />
+          {!isCollapsed && <span className="font-medium">Settings</span>}
+        </Link>
+        
+        <button
+          onClick={logout}
+          className={`flex items-center w-full rounded-lg transition-colors text-red-600 hover:text-red-700 hover:bg-red-50 ${
+            isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2'
+          }`}
+          title={isCollapsed ? 'Logout' : ''}
+        >
+          <LogOut className="h-5 w-5" />
+          {!isCollapsed && <span className="font-medium">Logout</span>}
+        </button>
       </div>
     </div>
   );
 };
 
 export default AdminSidebar;
-
